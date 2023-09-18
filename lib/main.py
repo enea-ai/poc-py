@@ -1,8 +1,6 @@
-import yaml
 import os
 from google.cloud import bigquery
 from google.oauth2 import service_account
-import json
 import openai
 from dotenv import load_dotenv
 import utils
@@ -11,22 +9,6 @@ import lancedb
 # Load the stored environment variables
 # Must be called before reading environment variables
 load_dotenv()
-
-
-def read_yaml_file(filename):
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(current_dir, filename)
-    with open(file_path, 'r') as file:
-        data = yaml.safe_load(file)
-    return data
-
-
-def read_json_file(filename):
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(current_dir, filename)
-    with open(file_path, 'r') as file:
-        data = json.load(file)
-    return data
 
 
 def embeddingsConfigToQuery(embeddingsConfig):
@@ -79,8 +61,11 @@ def embed(text):
 
 
 if __name__ == "__main__":
-    configFile = read_yaml_file('./config.yml')
-    bigQueryCredentialsFile = read_json_file('./keys.json')
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    configFile = utils.read_yaml_file(os.path.join(current_dir, 'config.yml'))
+    bigQueryCredentialsFile = utils.read_json_file(os.path.join(
+        current_dir, 'keys.json')
+    )
 
     embeddingsQuery = embeddingsConfigToQuery(configFile['embeddings'])
     print(embeddingsQuery)
@@ -111,9 +96,9 @@ if __name__ == "__main__":
 
     uri = configFile['database']['uri']
     db = lancedb.connect(uri)
-    table = db.open_table("user")
-    # table = db.create_table("user",
-    #                         data=embeds)
+    # table = db.open_table("user")
+    table = db.create_table("user",
+                            data=embeds)
 
     searchTerm = embed('Problem with parking')
     result = table.search(searchTerm['vector']).limit(2).to_df()
